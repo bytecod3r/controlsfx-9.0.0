@@ -1,0 +1,99 @@
+ext.java9Args = [
+        // For various usages of TraversalEngine
+        "--add-exports=javafx.graphics/com.sun.javafx.scene=org.controlsfx.controls",
+        "--add-exports=javafx.graphics/com.sun.javafx.scene.traversal=org.controlsfx.controls",
+        // For various behaviors across controls
+        "--add-exports=javafx.controls/com.sun.javafx.scene.control.behavior=org.controlsfx.controls",
+        // For ReadOnlyUnbackedObservableList across files
+        "--add-exports=javafx.controls/com.sun.javafx.scene.control=org.controlsfx.controls",
+        // For InputMap used in behavior classes
+        "--add-exports=javafx.controls/com.sun.javafx.scene.control.inputmap=org.controlsfx.controls",
+        // For EventHandlerManager in AutoCompletionBinding
+        "--add-exports=javafx.base/com.sun.javafx.event=org.controlsfx.controls",
+        // For MappingChange, NonIterableChange across files
+        "--add-exports=javafx.base/com.sun.javafx.collections=org.controlsfx.controls",
+        // For VersionInfo in VersionChecker
+        "--add-exports=javafx.base/com.sun.javafx.runtime=org.controlsfx.controls",
+]
+
+ext.java9RuntimeArgs = [
+        // For accessing VirtualFlow field from the base class in GridViewSkin
+        "--add-opens=javafx.controls/javafx.scene.control.skin=org.controlsfx.controls",
+        // For accessing getChildren in ImplUtils
+        "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls"
+]
+
+subprojects {
+
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
+    apply plugin: 'maven'
+    apply from  : '../mavenPublish.gradle'
+
+    Properties cfg = new Properties()
+    cfg.load(new FileInputStream("$rootDir/controlsfx-build.properties"))
+
+    ext {
+      artifact_suffix       = cfg.artifact_suffix
+      specification_title   = cfg.controlsfx_specification_title  //'Java 8u20'
+      specification_version = cfg.controlsfx_specification_version //'8.20.7'
+      controlsfx_name       = 'controlsfx'
+      fxsampler_name        = 'fxsampler'
+      fxsampler_version     = cfg.fxsampler_specification_version + artifact_suffix
+      fxsampler_mainClass   = 'org.controlsfx.fxsampler/fxsampler.FXSampler'
+    }
+
+    group = 'org.controlsfx'
+    version = specification_version + artifact_suffix
+
+    sourceCompatibility = '1.9'
+    targetCompatibility = '1.9'
+
+    if (JavaVersion.current().isJava11Compatible()) {
+        apply plugin: 'org.openjfx.javafxplugin'
+    }
+
+    repositories {
+        mavenCentral()
+    }
+
+    compileJava {
+        options.encoding = "UTF-8"
+        options.incremental = true
+    }
+
+    javadoc {
+        def javaVersion = JavaVersion.current().majorVersion
+        if (JavaVersion.current().java11Compatible) {
+            options.links("https://openjfx.io/javadoc/"+ javaVersion)
+            options.links("https://docs.oracle.com/en/java/javase/" + javaVersion + "/docs/api")
+        } else {
+            options.links("https://docs.oracle.com/javase/" + javaVersion + "/docs/api")
+        }
+    }
+
+    task sourceJar(type: Jar) {
+        from sourceSets.main.java
+        from sourceSets.main.resources
+        classifier = 'sources'
+    }
+
+    task javadocJar(type: Jar) {
+        dependsOn javadoc
+        from javadoc.destinationDir
+        classifier = 'javadoc'
+    }
+
+    artifacts {
+        archives sourceJar
+        archives javadocJar
+    }
+
+    // Used in Travis
+    task getVersion {
+        doLast {
+            println "$project.version"
+        }
+    }
+}

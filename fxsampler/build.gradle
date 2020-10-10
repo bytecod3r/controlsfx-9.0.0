@@ -1,0 +1,13 @@
+ext.moduleName = 'org.controlsfx.fxsampler'
+
+version = fxsampler_version
+
+javafx {
+    modules = [ 'javafx.controls', 'javafx.web' ]
+}
+
+javadoc {
+    options.windowTitle("FXSampler Project ${version}")
+}
+
+
